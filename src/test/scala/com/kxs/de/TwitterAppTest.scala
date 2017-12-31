@@ -1,6 +1,5 @@
-package com.kxs.de.twite
+package com.kxs.de
 
-import java.net.URL
 import java.nio.file.Paths
 import java.util
 
@@ -38,7 +37,7 @@ class TwitterAppTest extends FunSuite with BeforeAndAfter {
 
     val config: Configuration = HBaseConfiguration.create
 
-    val hbaseconfig: String =  Paths.get("target/test-classes/hbase-site.local.xml").toAbsolutePath.toString
+    val hbaseconfig: String = Paths.get("target/test-classes/hbase-site.local.xml").toAbsolutePath.toString
     utility.getConfiguration.addResource(hbaseconfig)
     utility.getConfiguration.reloadConfiguration()
     utility.startMiniCluster

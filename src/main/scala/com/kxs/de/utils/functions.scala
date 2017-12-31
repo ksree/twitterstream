@@ -1,4 +1,4 @@
-package com.kxs.de.twite.utils
+package com.kxs.de.utils
 
 import java.io.{File, IOException}
 import java.util.UUID

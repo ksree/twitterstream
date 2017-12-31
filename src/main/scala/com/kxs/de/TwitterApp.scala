@@ -1,8 +1,8 @@
-package com.kxs.de.twite
+package com.kxs.de
 
 import java.nio.charset.StandardCharsets.UTF_8
 
-import com.kxs.de.twite.utils.functions
+import com.kxs.de.utils.functions
 import org.apache.hadoop.conf.Configuration
 import org.apache.hadoop.hbase.HBaseConfiguration
 import org.apache.hadoop.hbase.client.Put

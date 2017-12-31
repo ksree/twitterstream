@@ -1,4 +1,4 @@
-package com.kxs.de.twite
+package com.kxs.de
 
 import twitter4j.{Place, Status}
 

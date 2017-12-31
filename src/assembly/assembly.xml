@@ -8,7 +8,7 @@
     <baseDirectory>twitter-stream</baseDirectory>
     <fileSets>
         <fileSet>
-            <directory>${project.basedir}/scripts</directory>
+            <directory>${project.basedir}/src/scripts</directory>
             <outputDirectory>bin</outputDirectory>
             <includes>
                 <include>*.sh</include>
