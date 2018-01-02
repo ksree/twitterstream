@@ -33,7 +33,7 @@ class TwitterAppTest extends FunSuite with BeforeAndAfter {
 
   }
 
-  ignore("Test Hbase twitter data inserts") {
+  test("Test Hbase twitter data inserts") {
 
     val config: Configuration = HBaseConfiguration.create
 

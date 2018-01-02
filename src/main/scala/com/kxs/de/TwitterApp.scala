@@ -37,7 +37,7 @@ object TwitterApp {
     val seconds: Long = 120
 
     topHashTags(stream, seconds)
-    writeToHBase(stream, hconf, nameSpace = "datascience", tableName = "twitter")
+    writeToHBase(stream, hconf, nameSpace = "", tableName = "twitter")
     ssc.start()
     ssc.awaitTermination()
 
@@ -76,7 +76,7 @@ object TwitterApp {
     data.foreachRDD(rdd => {
       rdd.foreachPartition(partitionOfRecords =>
         partitionOfRecords.foreach(tweet => {
-          println(s"${tweet.userName},\n ${tweet.hastags}, \n ${tweet.text},\n ${tweet.retweetCount},\n ${tweet.language}, \n ${tweet.streetName},\n ${tweet.country} \n ${tweet.createdAt}")
+          println(s"${tweet.userName},\n ${tweet.hastags}, \n ${tweet.text},\n ${tweet.retweetCount},\n ${tweet.language},\n ${tweet.country} \n ${tweet.createdAt}")
         }
         )
       )
@@ -85,21 +85,19 @@ object TwitterApp {
     //Save twitter data to HBase
     data.foreachRDD { rdd =>
       functions.bulkPut(rdd, nameSpace, tableName, (tweet: Tweet) => {
-        val idBytes = Bytes.toBytes(tweet.hastags + "#" + tweet.createdAt)
+        val idBytes = Bytes.toBytes(tweet.userName + "#" + tweet.createdAt)
         val hashtag: Array[Byte] = Bytes.toBytes(tweet.hastags)
         val text: Array[Byte] = Bytes.toBytes(tweet.text)
         val userName: Array[Byte] = Bytes.toBytes(tweet.userName)
         val lang: Array[Byte] = Bytes.toBytes(tweet.language)
-        val stName: Array[Byte] = Bytes.toBytes(tweet.streetName)
         val country: Array[Byte] = Bytes.toBytes(tweet.country)
         val retweet: Array[Byte] = Bytes.toBytes(tweet.retweetCount)
-        new Put(idBytes).addColumn("TW".getBytes(UTF_8), "HT".getBytes(UTF_8), hashtag)
-        new Put(idBytes).addColumn("TW".getBytes(UTF_8), "txt".getBytes(UTF_8), text)
-        new Put(idBytes).addColumn("TW".getBytes(UTF_8), "UNAME".getBytes(UTF_8), userName)
-        new Put(idBytes).addColumn("TW".getBytes(UTF_8), "lng".getBytes(UTF_8), lang)
-        new Put(idBytes).addColumn("TW".getBytes(UTF_8), "stnm".getBytes(UTF_8), stName)
-        new Put(idBytes).addColumn("TW".getBytes(UTF_8), "cty".getBytes(UTF_8), country)
-        new Put(idBytes).addColumn("TW".getBytes(UTF_8), "rt".getBytes(UTF_8), retweet)
+        new Put(idBytes).addColumn("tw".getBytes(UTF_8), "ht".getBytes(UTF_8), hashtag)
+        .addColumn("tw".getBytes(UTF_8), "txt".getBytes(UTF_8), text)
+        .addColumn("tw".getBytes(UTF_8), "uname".getBytes(UTF_8), userName)
+        .addColumn("tw".getBytes(UTF_8), "lng".getBytes(UTF_8), lang)
+        .addColumn("tw".getBytes(UTF_8), "cty".getBytes(UTF_8), country)
+        .addColumn("tw".getBytes(UTF_8), "rt".getBytes(UTF_8), retweet)
       })
     }
 

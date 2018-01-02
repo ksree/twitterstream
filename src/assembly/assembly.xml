@@ -25,7 +25,7 @@
         <dependencySet>
             <outputDirectory>lib</outputDirectory>
             <unpack>false</unpack>
-            <useProjectArtifact>false</useProjectArtifact>
+            <useProjectArtifact>true</useProjectArtifact>
         </dependencySet>
     </dependencySets>
 </assembly>
