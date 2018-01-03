@@ -18,6 +18,7 @@ class TwitterAppTest extends FunSuite with BeforeAndAfter {
 
   var utility: HBaseTestingUtility = new HBaseTestingUtility
   val ColumnFamily_TW: Array[Byte] = "TW".getBytes
+  val config: Configuration = HBaseConfiguration.create
 
   val sparkConf = new SparkConf()
   sparkConf.setAppName("TwitterAppTest")
@@ -29,13 +30,12 @@ class TwitterAppTest extends FunSuite with BeforeAndAfter {
 
   ignore("Twitter top 10 hastag") {
     val seconds: Long = 10
-    TwitterApp.topHashTags(stream, seconds)
+    TwitterApp.topHashTags(stream, seconds, config)
 
   }
 
-  test("Test Hbase twitter data inserts") {
+  ignore("Test Hbase twitter data inserts") {
 
-    val config: Configuration = HBaseConfiguration.create
 
     val hbaseconfig: String = Paths.get("target/test-classes/hbase-site.local.xml").toAbsolutePath.toString
     utility.getConfiguration.addResource(hbaseconfig)
@@ -43,7 +43,7 @@ class TwitterAppTest extends FunSuite with BeforeAndAfter {
     utility.startMiniCluster
     utility.createTable(Bytes.toBytes("twitter"), ColumnFamily_TW)
 
-    TwitterApp.writeToHBase(stream, utility.getConfiguration, nameSpace = "", tableName = "twitter")
+    TwitterApp.writeToHBase(stream, nameSpace = "", tableName = "twitter")
 
     val resultScanner: ResultScanner = utility.getConnection.getTable(TableName.valueOf("twitter")).getScanner(ColumnFamily_TW)
     var resultIt: util.Iterator[Result] = resultScanner.iterator()
@@ -58,6 +58,5 @@ class TwitterAppTest extends FunSuite with BeforeAndAfter {
     ssc.awaitTermination
 
   }
-
 
 }

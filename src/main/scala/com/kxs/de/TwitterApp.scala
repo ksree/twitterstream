@@ -4,12 +4,9 @@ import java.nio.charset.StandardCharsets.UTF_8
 
 import com.kxs.de.utils.functions
 import org.apache.hadoop.conf.Configuration
-import org.apache.hadoop.hbase.HBaseConfiguration
-import org.apache.hadoop.hbase.client.Put
-import org.apache.hadoop.hbase.mapred.TableOutputFormat
-import org.apache.hadoop.hbase.mapreduce.TableInputFormat
+import org.apache.hadoop.hbase.client.{ConnectionFactory, Put}
 import org.apache.hadoop.hbase.util.Bytes
-import org.apache.hadoop.mapred.JobConf
+import org.apache.hadoop.hbase.{HBaseConfiguration, TableName}
 import org.apache.spark.SparkConf
 import org.apache.spark.streaming.dstream.{DStream, ReceiverInputDStream}
 import org.apache.spark.streaming.twitter.TwitterUtils
@@ -20,14 +17,7 @@ object TwitterApp {
 
   def main(args: Array[String]) {
 
-    val tablename: String = "twitter_streams"
     val hconf: Configuration = HBaseConfiguration.create()
-    hconf.set(TableInputFormat.INPUT_TABLE, tablename)
-
-    val jobConfig: JobConf = new JobConf()
-    jobConfig.setOutputFormat(classOf[TableOutputFormat])
-    jobConfig.set(TableOutputFormat.OUTPUT_TABLE, tablename)
-
     val sparkConf = new SparkConf().setAppName("TwitterPopularTags")
     val ssc = new StreamingContext(sparkConf, Seconds(60))
 
@@ -36,8 +26,8 @@ object TwitterApp {
     val stream = TwitterUtils.createStream(ssc, None)
     val seconds: Long = 120
 
-    topHashTags(stream, seconds)
-    writeToHBase(stream, hconf, nameSpace = "", tableName = "twitter")
+    topHashTags(stream, seconds, hconf)
+    writeToHBase(stream, nameSpace = "", tableName = "twitter")
     ssc.start()
     ssc.awaitTermination()
 
@@ -56,31 +46,34 @@ object TwitterApp {
     System.setProperty("twitter4j.oauth.accessTokenSecret", accessTokenSecret)
   }
 
-  def topHashTags(stream: ReceiverInputDStream[Status], seconds: Long): Unit = {
+  def topHashTags(stream: ReceiverInputDStream[Status], seconds: Long, hbaseConf: Configuration): Unit = {
     val hashTags: DStream[String] = stream.flatMap(status => status.getText.split(" ").filter(_.startsWith("#")))
     val topCounts: DStream[(Int, String)] = hashTags.map((_, 1)).reduceByKeyAndWindow(_ + _, Seconds(seconds))
       .map { case (topic, count) => (count, topic) }
       .transform(_.sortByKey(ascending = false))
 
     //Print popular hashtags
-    topCounts.foreachRDD(rdd => {
-      val topList = rdd.take(10)
-      println("\nPopular topics in last %s seconds (%s total):".format(seconds, rdd.count()))
-      topList.foreach { case (count, tag) => println("%s (%s tweets)".format(tag, count)) }
-    })
+    topCounts.foreachRDD((rdd, time) => {
+      val connection = ConnectionFactory.createConnection(hbaseConf)
+      val topList: Array[(Int, String)] = rdd.take(10)
+
+      //println("\nPopular topics in last %s seconds (%s total):".format(seconds, rdd.count()))
+
+      topList.foreach { case (count: Int, hashTag: String) =>
+        val table = connection.getTable(TableName.valueOf(Bytes.toBytes("tophashtags")))
+        var put = new Put(Bytes.toBytes(hashTag + "#" + time.toString()))
+        put.addColumn(Bytes.toBytes("c"), Bytes.toBytes("cnt"), Bytes.toBytes(count.toString))
+
+        table.put(put)
+        table.close()
+      }
+      connection.close()
+    }
+    )
   }
 
-  def writeToHBase(stream: ReceiverInputDStream[Status], hconfig: Configuration, nameSpace: String, tableName: String): Unit = {
+  def writeToHBase(stream: ReceiverInputDStream[Status], nameSpace: String, tableName: String): Unit = {
     val data: DStream[Tweet] = stream.map(status => Tweet(status))
-
-    data.foreachRDD(rdd => {
-      rdd.foreachPartition(partitionOfRecords =>
-        partitionOfRecords.foreach(tweet => {
-          println(s"${tweet.userName},\n ${tweet.hastags}, \n ${tweet.text},\n ${tweet.retweetCount},\n ${tweet.language},\n ${tweet.country} \n ${tweet.createdAt}")
-        }
-        )
-      )
-    })
 
     //Save twitter data to HBase
     data.foreachRDD { rdd =>
@@ -93,11 +86,11 @@ object TwitterApp {
         val country: Array[Byte] = Bytes.toBytes(tweet.country)
         val retweet: Array[Byte] = Bytes.toBytes(tweet.retweetCount)
         new Put(idBytes).addColumn("tw".getBytes(UTF_8), "ht".getBytes(UTF_8), hashtag)
-        .addColumn("tw".getBytes(UTF_8), "txt".getBytes(UTF_8), text)
-        .addColumn("tw".getBytes(UTF_8), "uname".getBytes(UTF_8), userName)
-        .addColumn("tw".getBytes(UTF_8), "lng".getBytes(UTF_8), lang)
-        .addColumn("tw".getBytes(UTF_8), "cty".getBytes(UTF_8), country)
-        .addColumn("tw".getBytes(UTF_8), "rt".getBytes(UTF_8), retweet)
+          .addColumn("tw".getBytes(UTF_8), "txt".getBytes(UTF_8), text)
+          .addColumn("tw".getBytes(UTF_8), "uname".getBytes(UTF_8), userName)
+          .addColumn("tw".getBytes(UTF_8), "lng".getBytes(UTF_8), lang)
+          .addColumn("tw".getBytes(UTF_8), "cty".getBytes(UTF_8), country)
+          .addColumn("tw".getBytes(UTF_8), "rt".getBytes(UTF_8), retweet)
       })
     }
 
