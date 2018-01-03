@@ -34,11 +34,11 @@ object TwitterApp {
   }
 
   def twitterAuth: String = {
-    // Configure Twitter credentials
-    val consumerKey = "ELoC3AYmLefiCnytIfSxXceTm"
-    val consumerSecret = "199X0943GBpG9KxsNwq5VWJjW2SV9xZd8HDdIBkyQUaSkQ55UY"
-    val accessToken = "945338272720523264-SOJA1ZXykLPfTvi0wH1zpqg0UxvzTOF"
-    val accessTokenSecret = "wgqpiQK1nbssqA6TAqKN3dYNwFxrKMzFLuhyoTXLwrzjE"
+    // Add your Twitter credentials
+    val consumerKey = "******"
+    val consumerSecret = "******"
+    val accessToken = "*******"
+    val accessTokenSecret = "********"
 
     System.setProperty("twitter4j.oauth.consumerKey", consumerKey)
     System.setProperty("twitter4j.oauth.consumerSecret", consumerSecret)
